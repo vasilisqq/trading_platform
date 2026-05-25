@@ -1,22 +1,14 @@
-"""
-Database Configuration Module
-
-Конфигурирует асинхронное подключение к PostgreSQL и создание сессий.
-"""
-
-import logging
 from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
-# from core.config import settings
 
+from config import settings
 
 
 class Base(DeclarativeBase):
     """Базовый класс для всех ORM моделей"""
-
     pass
 
 
@@ -45,4 +37,3 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             yield session
         finally:
             await session.close()
-            logger.debug("Сессия БД закрыта")
