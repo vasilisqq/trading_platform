@@ -1,6 +1,5 @@
-from db import Base
+from src.core.db import Base
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, UUID
-import uuid
 
 class User(Base):
     __tablename__ = "users"

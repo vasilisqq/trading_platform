@@ -1,0 +1,180 @@
+Metadata-Version: 2.4
+Name: trade
+Version: 0.1.0
+Summary: Add your description here
+Requires-Python: >=3.14
+Description-Content-Type: text/markdown
+Requires-Dist: alembic>=1.18.4
+Requires-Dist: asyncpg>=0.31.0
+Requires-Dist: fastapi>=0.136.3
+Requires-Dist: psycopg>=3.3.4
+Requires-Dist: psycopg2-binary>=2.9.12
+Requires-Dist: pydantic>=2.13.4
+Requires-Dist: pydantic-settings>=2.14.1
+Requires-Dist: sqlalchemy>=2.0.50
+Requires-Dist: uvicorn>=0.48.0
+
+# TradeSim — Симулятор биржевой торговли
+
+**Полнофункциональный симулятор биржи для изучения архитектуры бэкенда на Python.**
+
+Проект создан для глубокого изучения backend-разработки: от асинхронных фреймворков и очередей до gRPC, WebSockets и production-инфраструктуры. Каждое технологическое решение обосновано и сопровождается теорией для подготовки к собеседованиям.
+
+---
+
+## Цели проекта
+
+1. **Образовательная** — детально разобрать устройство торговой системы: стакан заявок, матчинг, управление портфелем, стриминг котировок.
+2. **Технологическая** — применить на практике современный стек Python-разработки.
+3. **Карьерная** — подготовиться к собеседованиям на backend-разработчика, освоив паттерны, теорию и production-практики.
+
+---
+
+## Важное уточнение: что это за торговля?
+
+**TradeSim — это спотовая биржевая торговля (Spot Trading), а не бинарные опционы.**
+
+**Спотовая торговля:**
+- Пользователь владеет активом (акции, криптовалюта)
+- Есть стакан заявок (Order Book) — список лимитных ордеров
+- Есть матчинг-движок (Matching Engine) — сопоставление заявок
+- Рыночные ордера исполняются мгновенно по лучшей цене
+- Лимитные ордера становятся в стакан и ждут встречной заявки
+- Реальный портфель: купил 10 AAPL — они в портфеле
+
+**Бинарные опционы (не про нас):**
+- "Ставка" на направление цены (вверх/вниз) через фиксированное время
+- Нет стакана заявок, нет матчинга, нет владения активом
+- Пример: WR Trading Simulator — это бинарные опционы
+
+**Почему это важно:**
+- Бинарные опционы — простая ставка, backend там тривиальный
+- Спотовая торговля — сложная распределенная система с конкурентным доступом, транзакциями, real-time стримингом. Именно это и нужно для изучения backend-архитектуры.
+
+**Где посмотреть спотовую торговлю:**
+- [Binance Spot](https://www.binance.com/ru/trade/BTC_USDT) — стакан, лимитные/рыночные ордера
+- [TradingView](https://ru.tradingview.com/chart/) — графики, стакан
+- [Interactive Brokers](https://www.interactivebrokers.com/) — профессиональная торговля
+
+---
+
+## Документация
+
+| Файл | Описание |
+|------|----------|
+| [docs/architecture.md](docs/architecture.md) | Архитектура системы, микросервисы, схема взаимодействия |
+| [docs/tech-stack.md](docs/tech-stack.md) | Обоснование выбора технологий с альтернативами |
+| [docs/roadmap.md](docs/roadmap.md) | Дорожная карта по фазам с критериями перехода |
+| [docs/mvp.md](docs/mvp.md) | Детальный план MVP с авторизацией, котировками, платежами |
+| [docs/interview-prep.md](docs/interview-prep.md) | Теория, вопросы с собеседований, чек-листы |
+
+---
+
+## Быстрый старт
+
+```bash
+# Клонировать репозиторий
+git clone <repo_url>
+cd tradesim
+
+# Запустить инфраструктуру
+docker-compose up -d postgres redis rabbitmq
+
+# Применить миграции
+cd services/order
+alembic upgrade head
+
+# Запустить сервис
+uvicorn src.main:app --reload
+```
+
+---
+
+## Структура репозитория (монорепо)
+
+```
+tradesim/
+├── docker-compose.yml
+├── Makefile
+├── README.md
+├── docs/                    # Документация (ADR, архитектура)
+│   ├── architecture.md
+│   ├── tech-stack.md
+│   ├── roadmap.md
+│   ├── mvp.md
+│   └── interview-prep.md
+├── .github/
+│   └── workflows/
+│       ├── lint.yml
+│       └── test.yml
+├── services/
+│   ├── account/              # Django + DRF (JWT + сессии)
+│   │   ├── Dockerfile
+│   │   ├── pyproject.toml
+│   │   └── src/
+│   ├── order/                # FastAPI
+│   │   ├── Dockerfile
+│   │   ├── pyproject.toml
+│   │   └── src/
+│   ├── market-data/          # aiohttp (котировки)
+│   │   ├── Dockerfile
+│   │   ├── pyproject.toml
+│   │   └── src/
+│   ├── matching-engine/      # gRPC
+│   │   ├── Dockerfile
+│   │   ├── pyproject.toml
+│   │   └── src/
+│   ├── analytics/            # FastAPI + GraphQL
+│   │   ├── Dockerfile
+│   │   ├── pyproject.toml
+│   │   └── src/
+│   ├── payment/              # Заглушка платежной системы
+│   │   ├── Dockerfile
+│   │   ├── pyproject.toml
+│   │   └── src/
+│   └── notification/         # Celery worker
+│       ├── Dockerfile
+│       ├── pyproject.toml
+│       └── src/
+├── shared/
+│   ├── protobuf/             # .proto файлы
+│   └── events/               # Схемы Kafka-событий
+├── infra/
+│   ├── nginx/
+│   ├── prometheus/
+│   ├── grafana/
+│   └── jaeger/
+└── tests/
+    ├── integration/          # Testcontainers
+    └── e2e/                  # Locust сценарии
+```
+
+---
+
+## Soft skills и процесс разработки
+
+- **Ведите README** в каждом сервисе с архитектурным decision record (ADR).
+- **Git workflow:** conventional commits (`feat:`, `fix:`, `docs:`), feature branches, pull requests.
+- **Code Review:** просите друга проверить PR с вопросом «Почему здесь так?»
+- **Документируйте решения** в `docs/adr/`.
+- **Репетиция собеседования:** расскажите про проект вслух за 5 минут.
+
+---
+
+## Ресурсы для изучения
+
+### Книги
+- «Designing Data-Intensive Applications» (Martin Kleppmann) — must read.
+- «Architecture Patterns with Python» (Harry Percival) — DDD, CQRS, Event-Driven.
+- «Fluent Python» (Luciano Ramalho) — углубление в Python.
+
+### Статьи
+- [FastAPI Best Practices](https://github.com/zhanymkanov/fastapi-best-practices)
+- [SQLAlchemy 2.0 Documentation](https://docs.sqlalchemy.org/en/20/)
+- [Kafka: The Definitive Guide](https://www.confluent.io/resources/kafka-the-definitive-guide/)
+- [gRPC Core Concepts](https://grpc.io/docs/what-is-grpc/core-concepts/)
+- [OpenTelemetry Python](https://opentelemetry.io/docs/instrumentation/python/)
+
+---
+
+**Главное правило:** не пишите код вслепую. Каждое решение должно быть обосновано.
