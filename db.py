@@ -13,7 +13,7 @@ class Base(DeclarativeBase):
 
 
 # Создание асинхронного движка для работы с БД
-engine = create_async_engine(settings.DATABASE_URL, echo=settings.DEBUG, future=True)
+engine = create_async_engine(settings.DATABASE_URL.get_secret_value(), future=True)
 
 # Создание фабрики сессий
 AsyncSessionLocal = async_sessionmaker(
@@ -22,16 +22,6 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """
-    Dependency для получения сессии базы данных.
-
-    Использование:
-        async def my_route(db: AsyncSession = Depends(get_db)):
-            # Работаем с базой
-
-    Yields:
-        AsyncSession: Асинхронная сессия для работы с БД
-    """
     async with AsyncSessionLocal() as session:
         try:
             yield session
