@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     DB_PASSWORD: SecretStr
     DB_NAME: str
     APP_NAME: str
+    SECRET_PEPPER: SecretStr
 
     class Config:
         env_file = ".env"

@@ -12,3 +12,6 @@ class CreateUser(BaseUser):
 
 class UserResponse(BaseUser):
     id: UUID
+
+    class Config:
+        from_attributes = True

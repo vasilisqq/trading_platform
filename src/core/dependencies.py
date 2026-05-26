@@ -5,5 +5,5 @@ from src.core.db import get_db
 
 
 async def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
-    return UserService()
+    return UserService(db)
 
