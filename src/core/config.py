@@ -10,7 +10,9 @@ class Settings(BaseSettings):
     DB_PASSWORD: SecretStr
     DB_NAME: str
     APP_NAME: str
-    SECRET_PEPPER: SecretStr
+    SECRET_KEY: SecretStr
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    REFRESH_TOKEN_EXPIRE_DAYS: int
 
     class Config:
         env_file = ".env"

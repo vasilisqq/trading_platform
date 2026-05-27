@@ -13,13 +13,13 @@ class UserRepository:
         result = await self.db.execute(select(User).where(User.email == email).limit(1))
         return result.scalar_one_or_none()
 
-    async def get_by_username(self, username: str) -> User:
+    async def get_by_username(self, username: str) -> User | None:
         result = await self.db.execute(
             select(User).where(User.username == username).limit(1)
         )
         return result.scalar_one_or_none()
 
-    async def create(self, user_data: CreateUser, hashed_password: str) -> None:
+    async def create(self, user_data: CreateUser, hashed_password: str) -> User:
         user = User(
             id=uuid7(),
             username=user_data.username,
@@ -29,4 +29,5 @@ class UserRepository:
         )
         self.db.add(user)
         await self.db.commit()
-        return True
+        await self.db.refresh(user)
+        return user
