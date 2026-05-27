@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from src.exceptions import UserAlreadyExistsError, DataBaseError, TokenCreatingError
+from src.exceptions import UserAlreadyExistsError, DataBaseError, UserNotFoundError, UserDisabledError
 import uvicorn
 from src.core.config import settings
 from api import router
@@ -23,11 +23,18 @@ async def database_error_handler(request: Request, exc: DataBaseError):
         content={"detail": f"Error with creating new {exc.table_name}"},
     )
 
-@app.exception_handler(TokenCreatingError)
-async def token_creating_handler(request: Request, exc: TokenCreatingError):
+@app.exception_handler(UserNotFoundError)
+async def user_not_found_handler(request: Request, exc: UserNotFoundError):
     return JSONResponse(
         status_code=409,
-        content={"detail": f"Error with creating {exc.token_type} token"},
+        content={"detail": "User does not exists"},
+    )
+
+@app.exception_handler(UserDisabledError)
+async def user_not_found_handler(request: Request, exc: UserDisabledError):
+    return JSONResponse(
+        status_code=409,
+        content={"detail": "User was blocked"},
     )
 
 

@@ -14,7 +14,12 @@ class DataBaseError(DomainError):
         super().__init__(f"Error with creating new {table_name}")
 
 
-class TokenCreatingError(DomainError):
-    def __init__(self, type:str):
-        self.token_type=type
-        super().__init__(f"Error with creating {type} token")
+
+class UserNotFoundError(DomainError):
+    def __init__(self):
+        super().__init__(f"User does not exist")
+
+
+class UserDisabledError(DomainError):
+    def __init__(self):
+        super().__init__(f"User was blocked")

@@ -1,8 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.models.user import User
-from src.schemas.user import CreateUser
+from src.schemas.user import CreateUser, UserLogin
 from uuid import uuid7
+from uuid import UUID
 
 
 class UserRepository:
@@ -31,3 +32,27 @@ class UserRepository:
         await self.db.commit()
         await self.db.refresh(user)
         return user
+    
+
+    async def get_user(self, email:str) -> User | None:
+        result = await self.db.execute(
+            select(User).where(
+                User.email == email
+            )
+        )
+        return result.scalar_one_or_none()
+    
+    async def get_by_id(self, user_id: UUID) -> User | None:
+        result = await self.db.execute(
+            select(User).where(User.id == user_id)
+        )
+        return result.scalar_one_or_none()
+
+    # async def user_is_active(self, id:UUID) -> bool | None:
+    #     result = await self.db.execute(
+    #         select(1).where(
+    #             User.id == id,
+    #             User.is_active == True
+    #         )
+    #     )
+    #     return result.scalars()

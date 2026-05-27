@@ -34,3 +34,7 @@ def create_refresh_token(data:dict) -> str:
     return create_token("refresh", data)
 
 
+def verify_password(password: str, hashed_password: str) -> bool:
+    combined = password.encode()
+    hash256 = hashlib.sha256(combined).digest()
+    return bcrypt.checkpw(hash256, hashed_password.encode())
