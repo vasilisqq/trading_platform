@@ -38,3 +38,10 @@ def verify_password(password: str, hashed_password: str) -> bool:
     combined = password.encode()
     hash256 = hashlib.sha256(combined).digest()
     return bcrypt.checkpw(hash256, hashed_password.encode())
+
+
+def decode_refresh_token(token: str) -> dict:
+    payload = jwt.decode(token, settings.SECRET_KEY.get_secret_value(), algorithms=["HS256"])
+    if payload.get("type") != "refresh":
+        raise jwt.InvalidTokenError("Not a refresh token")
+    return payload

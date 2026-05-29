@@ -23,3 +23,8 @@ class UserNotFoundError(DomainError):
 class UserDisabledError(DomainError):
     def __init__(self):
         super().__init__(f"User was blocked")
+
+    
+class TokenNotFoundError(DomainError):
+    def __init__(self):
+        super().__init__(f"Refresh token not found")

@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from src.exceptions import UserAlreadyExistsError, DataBaseError, UserNotFoundError, UserDisabledError
+from src.exceptions import UserAlreadyExistsError, DataBaseError, UserNotFoundError, UserDisabledError, TokenNotFoundError
 import uvicorn
 from src.core.config import settings
 from api import router
@@ -35,6 +35,13 @@ async def user_not_found_handler(request: Request, exc: UserDisabledError):
     return JSONResponse(
         status_code=409,
         content={"detail": "User was blocked"},
+    )
+
+@app.exception_handler(TokenNotFoundError)
+async def user_not_found_handler(request: Request, exc: TokenNotFoundError):
+    return JSONResponse(
+        status_code=401,
+        content={"detail": "Refresh token not found"},
     )
 
 

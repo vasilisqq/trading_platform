@@ -2,8 +2,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.models.user import User
 from src.schemas.user import CreateUser, UserLogin
 from src.repositories.user_repository import UserRepository
-from core.security import hash_password, create_access_token, create_refresh_token, verify_password
+from core.security import hash_password, create_access_token, create_refresh_token, verify_password, decode_refresh_token
 from src.exceptions import UserAlreadyExistsError, DataBaseError, UserNotFoundError, UserDisabledError
+from jwt import ExpiredSignatureError, InvalidTokenError
 
 
 class UserService:
@@ -37,7 +38,7 @@ class UserService:
         if not user.is_active:
             raise UserDisabledError()
         access_token = create_access_token(
-            {"sub": str(user.id), "email": user.email}
+            {"sub": str(user.id), "email": user.email, "username": user.username}
         )
         refresh_token = create_refresh_token({"sub": str(user.id)})
         return {
@@ -52,3 +53,26 @@ class UserService:
 
     async def get_user_by_username(self, username: str) -> User | None:
         return await self.repo.get_by_username(username)
+    
+    async def refresh(self, refresh_token:str) -> dict:
+        try:
+            payload = decode_refresh_token(refresh_token)
+        except (ExpiredSignatureError, InvalidTokenError):
+            raise UserNotFoundError()
+        user_id = payload.get("sub")
+        user = await self.repo.get_by_id(user_id)
+        if not user:
+            raise UserNotFoundError()
+        if not user.is_active:
+            raise UserDisabledError()
+
+        access_token = create_access_token({"sub": str(user.id), "email": user.email, "username": user.username})
+        new_refresh_token = create_refresh_token({"sub": str(user.id)})
+
+        return {
+            "access_token": access_token,
+            "refresh_token": new_refresh_token,
+            "user": user
+        }
+
+
