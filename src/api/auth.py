@@ -46,3 +46,17 @@ async def refresh_token(request: Request,
     return build_token_response(data["access_token"], data["user"])
 
 
+@router.post("/logout")
+async def logout(request: Request, response: Response):
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        raise TokenNotFoundError()
+    response.delete_cookie(key="refresh_token",
+                           httponly=True,
+                           samesite="lax",
+                           secure=True)
+    return {"message": "Susssessfully logget out"}
+
+
+
+
