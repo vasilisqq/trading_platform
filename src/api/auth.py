@@ -47,10 +47,13 @@ async def refresh_token(request: Request,
 
 
 @router.post("/logout")
-async def logout(request: Request, response: Response):
+async def logout(request: Request,
+                 response: Response,
+                 user_service = Depends(get_user_service)):
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
         raise TokenNotFoundError()
+    await user_service.logout(refresh_token)
     response.delete_cookie(key="refresh_token",
                            httponly=True,
                            samesite="lax",

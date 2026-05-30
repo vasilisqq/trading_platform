@@ -1,6 +1,6 @@
 from src.core.db import Base
 from sqlalchemy import Column, String, DateTime, Boolean, UUID, func
-
+from sqlalchemy.orm import relationship
 
 
 class User(Base):
@@ -12,3 +12,5 @@ class User(Base):
     updated_at = Column(DateTime, nullable=True, onupdate=func.now())
     is_active = Column(Boolean, nullable=False, default=True)
     hashed_password = Column(String, nullable=False)
+
+    sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan")

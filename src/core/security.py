@@ -13,7 +13,7 @@ def hash_password(password: str) -> str:
     return hashed.decode()
 
 
-def create_token(token_type: str, data: dict) -> str:
+def _create_token(token_type: str, data: dict) -> str:
     to_encode = data.copy()
     if token_type == "refresh":
         expire = datetime.now(tz=timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
@@ -27,11 +27,11 @@ def create_token(token_type: str, data: dict) -> str:
 
 
 def create_access_token(data: dict) -> str:
-    return create_token("access", data)
+    return _create_token("access", data)
 
 
 def create_refresh_token(data:dict) -> str:
-    return create_token("refresh", data)
+    return _create_token("refresh", data)
 
 
 def verify_password(password: str, hashed_password: str) -> bool:
