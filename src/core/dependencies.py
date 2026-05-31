@@ -8,7 +8,9 @@ import jwt
 from core.config import settings
 from src.repositories.user_repository import UserRepository
 from src.exceptions import UserNotFoundError, UserDisabledError
-
+from src.services.token_blacklist import TokenBlackListService
+from src.core.redis import redis_client
+from src.core.security import decode_access_token
 
 security = HTTPBearer()
 
@@ -20,14 +22,8 @@ async def get_current_user(
         credentials: HTTPAuthorizationCredentials = Depends(security),
         db = Depends(get_db)) -> User:
     token = credentials.credentials
-    print(token[:50])
     try:
-        payload = jwt.decode(
-            token,
-            settings.SECRET_KEY.get_secret_value(),
-            algorithms=["HS256"]
-        )
-        print(payload)
+        payload = decode_access_token(token)
         user_id = payload.get("sub")
         if not user_id:
             raise HTTPException(status_code=401, detail="Invalid token")
@@ -35,7 +31,9 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
-    
+    token_blacklist = TokenBlackListService(redis_client)
+    if await token_blacklist.is_blacklisted(payload.get("jti")):
+        raise HTTPException(status_code=401, detail="Invalid token")
     repo = UserRepository(db)
     user = await repo.get_by_id(user_id)
     if not user:

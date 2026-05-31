@@ -16,6 +16,7 @@ dependencies = [
     "pyjwt>=2.13.0",
     "sqlalchemy>=2.0.50",
     "uvicorn>=0.48.0",
+    "redis>=8.0.0",
 ]
 [build-system]
 requires = ["setuptools>=61.0"]

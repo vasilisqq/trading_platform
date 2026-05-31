@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, Response, Request
-from schemas.user import CreateUser, UserResponse, UserLogin
+from fastapi.security import HTTPAuthorizationCredentials
+from schemas.user import CreateUser, UserLogin
 from schemas.token import TokenResponse
 from src.core.dependencies import get_user_service
 from services.user_service import UserService
-from src.core.config import settings
 from src.exceptions import TokenNotFoundError
 from src.api.utils import set_cookie_refresh_token, build_token_response
+from src.core.dependencies import security
 
 
 router = APIRouter(prefix="/auth", 
@@ -49,11 +50,14 @@ async def refresh_token(request: Request,
 @router.post("/logout")
 async def logout(request: Request,
                  response: Response,
-                 user_service = Depends(get_user_service)):
+                 user_service = Depends(get_user_service),
+                 credentials: HTTPAuthorizationCredentials = Depends(security)):
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
         raise TokenNotFoundError()
-    await user_service.logout(refresh_token)
+    
+    access_token = credentials.credentials
+    await user_service.logout(refresh_token, access_token)
     response.delete_cookie(key="refresh_token",
                            httponly=True,
                            samesite="lax",

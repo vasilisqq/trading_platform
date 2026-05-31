@@ -3,6 +3,7 @@ import jwt
 from datetime import datetime, timedelta, timezone
 from src.core.config import settings
 import hashlib
+import uuid
 
 
 def hash_password(password: str) -> str:
@@ -19,8 +20,9 @@ def _create_token(token_type: str, data: dict) -> str:
         expire = datetime.now(tz=timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc), "type": "refresh"})
     elif token_type == "access":
+        jti = uuid.uuid7()
         expire = datetime.now(tz=timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc)})
+        to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc), "jti": jti, "type": "access"})
     else:
         raise ValueError(f"unknown token type f{token_type}")
     return jwt.encode(to_encode, settings.SECRET_KEY.get_secret_value(), algorithm="HS256")
@@ -40,8 +42,25 @@ def verify_password(password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(hash256, hashed_password.encode())
 
 
-def decode_refresh_token(token: str) -> dict:
-    payload = jwt.decode(token, settings.SECRET_KEY.get_secret_value(), algorithms=["HS256"])
+def _decode_token(token:str, verify_exp:bool) -> dict:
+    options = {"verify_exp": verify_exp}
+    return jwt.decode(
+        token,
+        settings.SECRET_KEY.get_secret_value(),
+        algorithms=["HS256"],
+        options=options
+    )
+
+
+def decode_refresh_token(token: str, verify_exp: bool = True) -> dict:
+    payload = _decode_token(token, verify_exp=verify_exp)
     if payload.get("type") != "refresh":
-        raise jwt.InvalidTokenError("Not a refresh token")
+        raise jwt.InvalidTokenError("Not an refresh token")
+    return payload
+
+
+def decode_access_token(token: str, verify_exp: bool = True) -> dict:
+    payload = _decode_token(token, verify_exp=verify_exp)
+    if payload.get("type") != "access":
+        raise jwt.InvalidTokenError("Not an access token")
     return payload

@@ -5,11 +5,15 @@ src/exceptions.py
 src/main.py
 src/api/__init__.py
 src/api/auth.py
+src/api/user.py
+src/api/utils.py
 src/core/config.py
 src/core/db.py
 src/core/dependencies.py
 src/core/security.py
+src/models/session.py
 src/models/user.py
+src/repositories/session_repository.py
 src/repositories/user_repository.py
 src/schemas/token.py
 src/schemas/user.py

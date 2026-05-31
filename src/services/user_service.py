@@ -3,11 +3,13 @@ from src.models.user import User
 from src.schemas.user import CreateUser, UserLogin
 from src.repositories.user_repository import UserRepository
 from src.repositories.session_repository import SessionRepository
-from core.security import hash_password, create_access_token, create_refresh_token, verify_password, decode_refresh_token
+from core.security import hash_password, create_access_token, create_refresh_token, verify_password, decode_refresh_token, decode_access_token
 from src.exceptions import UserAlreadyExistsError, DataBaseError, UserNotFoundError, UserDisabledError
 from jwt import ExpiredSignatureError, InvalidTokenError
 from datetime import datetime, timezone, timedelta
 from src.core.config import settings
+from src.services.token_blacklist import TokenBlackListService
+from src.core.redis import redis_client
 
 
 class UserService:
@@ -15,6 +17,7 @@ class UserService:
         self.db = db
         self.repo = UserRepository(db)
         self.session_repo = SessionRepository(db)
+        self.token_blacklist = TokenBlackListService(redis_client)
 
 
     async def register(self, user_data: CreateUser) -> dict[str, str|User]:
@@ -60,8 +63,15 @@ class UserService:
         
         return await self._create_tokens(user)
         
-    async def logout(self, refresh_token:str) -> None:
-        await self.session_repo.delete_by_hash(refresh_token) 
+    async def logout(self, refresh_token:str, access_token:str) -> None:
+        await self.session_repo.delete_by_hash(refresh_token)
+        try:
+            payload = decode_access_token(access_token, verify_exp=False)
+            exp = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
+            await self.token_blacklist.blacklist_access_token(payload["jti"], exp)
+        except InvalidTokenError:
+            pass
+
 
     async def _create_tokens(self, user: User):
         access_token = create_access_token(

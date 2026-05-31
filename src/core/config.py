@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     SECRET_KEY: SecretStr
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_DAYS: int
+    REDIS_URL: SecretStr
 
     class Config:
         env_file = ".env"
