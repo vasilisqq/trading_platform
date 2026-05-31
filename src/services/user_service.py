@@ -10,7 +10,6 @@ from jwt import ExpiredSignatureError, InvalidTokenError
 from datetime import datetime, timezone, timedelta
 from src.core.config import settings
 from src.services.token_blacklist import TokenBlackListService
-from src.core.redis import redis_client
 
 
 class UserService:
@@ -18,7 +17,7 @@ class UserService:
         self.db = db
         self.repo = UserRepository(db)
         self.session_repo = SessionRepository(db)
-        self.token_blacklist = TokenBlackListService(redis_client)
+        self.token_blacklist = TokenBlackListService()
 
 
     async def register(self, user_data: CreateUser) -> dict[str, str|User]:

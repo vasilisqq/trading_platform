@@ -10,6 +10,7 @@ src/api/utils.py
 src/core/config.py
 src/core/db.py
 src/core/dependencies.py
+src/core/redis.py
 src/core/security.py
 src/models/session.py
 src/models/user.py
@@ -17,6 +18,7 @@ src/repositories/session_repository.py
 src/repositories/user_repository.py
 src/schemas/token.py
 src/schemas/user.py
+src/services/token_blacklist.py
 src/services/user_service.py
 trade.egg-info/PKG-INFO
 trade.egg-info/SOURCES.txt

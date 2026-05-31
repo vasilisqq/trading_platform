@@ -5,11 +5,9 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from src.core.db import get_db
 from src.models.user import User
 import jwt
-from core.config import settings
 from src.repositories.user_repository import UserRepository
 from src.exceptions import UserNotFoundError, UserDisabledError
 from src.services.token_blacklist import TokenBlackListService
-from src.core.redis import redis_client
 from src.core.security import decode_access_token
 
 security = HTTPBearer()
@@ -31,7 +29,7 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
-    token_blacklist = TokenBlackListService(redis_client)
+    token_blacklist = TokenBlackListService()
     if await token_blacklist.is_blacklisted(payload.get("jti")):
         raise HTTPException(status_code=401, detail="Invalid token")
     repo = UserRepository(db)

@@ -16,6 +16,7 @@ Requires-Dist: pyjwt>=2.13.0
 Requires-Dist: sqlalchemy>=2.0.50
 Requires-Dist: uvicorn>=0.48.0
 Requires-Dist: redis>=8.0.0
+Requires-Dist: zxcvbn>=4.5.0
 
 # TradeSim — Симулятор биржевой торговли
 

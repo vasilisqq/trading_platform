@@ -19,6 +19,7 @@ async def register_user(
     response: Response,
     user_service: UserService = Depends(get_user_service)
 ):
+    print(user_data)
     data = await user_service.register(user_data)
     set_cookie_refresh_token(response, data["refresh_token"])
     return build_token_response(data["access_token"], data["user"])
@@ -53,10 +54,12 @@ async def logout(request: Request,
                  user_service = Depends(get_user_service),
                  credentials: HTTPAuthorizationCredentials = Depends(security)):
     refresh_token = request.cookies.get("refresh_token")
+    print(refresh_token)
     if not refresh_token:
         raise TokenNotFoundError()
     
     access_token = credentials.credentials
+    print(access_token)
     await user_service.logout(refresh_token, access_token)
     response.delete_cookie(key="refresh_token",
                            httponly=True,

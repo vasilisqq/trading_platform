@@ -22,7 +22,7 @@ def _create_token(token_type: str, data: dict) -> str:
     elif token_type == "access":
         jti = uuid.uuid7()
         expire = datetime.now(tz=timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc), "jti": jti, "type": "access"})
+        to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc), "jti": str(jti), "type": "access"})
     else:
         raise ValueError(f"unknown token type f{token_type}")
     return jwt.encode(to_encode, settings.SECRET_KEY.get_secret_value(), algorithm="HS256")
