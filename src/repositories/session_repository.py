@@ -22,7 +22,6 @@ class SessionRepository:
             expires_at=expires_at
         )
         self.db.add(session)
-        await self.db.commit()
 
 
     async def get_by_token(self, refresh_token:str) -> Session | None:
@@ -34,11 +33,9 @@ class SessionRepository:
     
     async def delete(self, session:Session) -> None:
         self.db.delete(session)
-        await self.db.commit()
 
     async def delete_by_hash(self, refresh_token:str) -> None:
         token_hash = self._hash_token(refresh_token)
         await self.db.execute(
             delete(Session).where(Session.refresh_token_hash == token_hash)
         )
-        await self.db.commit()

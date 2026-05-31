@@ -28,28 +28,28 @@ async def user_exists_handler(request: Request, exc: UserAlreadyExistsError):
 @app.exception_handler(DataBaseError)
 async def database_error_handler(request: Request, exc: DataBaseError):
     return JSONResponse(
-        status_code=409,
+        status_code=500,
         content={"detail": f"Error with creating new {exc.table_name}"},
     )
 
 @app.exception_handler(UserNotFoundError)
 async def user_not_found_handler(request: Request, exc: UserNotFoundError):
     return JSONResponse(
-        status_code=409,
+        status_code=404,
         content={"detail": "User does not exists"},
     )
 
 
 @app.exception_handler(UserDisabledError)
-async def user_not_found_handler(request: Request, exc: UserDisabledError):
+async def user_disabled_handler(request: Request, exc: UserDisabledError):
     return JSONResponse(
-        status_code=409,
+        status_code=403,
         content={"detail": "User was blocked"},
     )
 
 
 @app.exception_handler(TokenNotFoundError)
-async def user_not_found_handler(request: Request, exc: TokenNotFoundError):
+async def token_not_found_handler(request: Request, exc: TokenNotFoundError):
     return JSONResponse(
         status_code=401,
         content={"detail": "Refresh token not found"},

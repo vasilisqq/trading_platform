@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, Response, Request
 from fastapi.security import HTTPAuthorizationCredentials
-from schemas.user import CreateUser, UserLogin
-from schemas.token import TokenResponse
+from src.schemas.user import CreateUser, UserLogin
+from src.schemas.token import TokenResponse
 from src.core.dependencies import get_user_service
-from services.user_service import UserService
+from src.services.user_service import UserService
 from src.exceptions import TokenNotFoundError
 from src.api.utils import set_cookie_refresh_token, build_token_response
 from src.core.dependencies import security
@@ -62,7 +62,7 @@ async def logout(request: Request,
                            httponly=True,
                            samesite="lax",
                            secure=True)
-    return {"message": "Susssessfully logget out"}
+    return {"message": "Successfully logget out"}
 
 
 

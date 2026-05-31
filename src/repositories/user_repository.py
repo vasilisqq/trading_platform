@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from src.models.user import User
 from src.schemas.user import CreateUser, UserLogin
 from uuid import uuid7
@@ -29,30 +29,19 @@ class UserRepository:
             is_active=True,
         )
         self.db.add(user)
-        await self.db.commit()
-        await self.db.refresh(user)
         return user
     
-
-    async def get_user(self, email:str) -> User | None:
+    async def get_by_email_or_username(self, email: str, username: str) -> User | None:
         result = await self.db.execute(
             select(User).where(
-                User.email == email
-            )
+                or_(User.email == email, User.username == username)
+            ).limit(1)
         )
         return result.scalar_one_or_none()
-    
+
+
     async def get_by_id(self, user_id: UUID) -> User | None:
         result = await self.db.execute(
             select(User).where(User.id == user_id)
         )
         return result.scalar_one_or_none()
-
-    # async def user_is_active(self, id:UUID) -> bool | None:
-    #     result = await self.db.execute(
-    #         select(1).where(
-    #             User.id == id,
-    #             User.is_active == True
-    #         )
-    #     )
-    #     return result.scalars()

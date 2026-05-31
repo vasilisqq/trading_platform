@@ -1,4 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError 
 from src.models.user import User
 from src.schemas.user import CreateUser, UserLogin
 from src.repositories.user_repository import UserRepository
@@ -21,23 +22,35 @@ class UserService:
 
 
     async def register(self, user_data: CreateUser) -> dict[str, str|User]:
-        if await self.get_user_by_email(user_data.email):
-            raise UserAlreadyExistsError("email")
-        if await self.get_user_by_username(user_data.username):
-            raise UserAlreadyExistsError("username")
         hashed_password = hash_password(user_data.password)
         user = await self.repo.create(user_data, hashed_password)
-        if not user:
-            raise DataBaseError("users")
-        return await self._create_tokens(user)
+        try:
+            await self.db.flush()
+            tokens = await self._create_tokens(user)
+            await self.db.commit()
+            return tokens
+        except IntegrityError:
+            await self.db.rollback()
+            existing = await self.repo.get_by_email_or_username(
+                user_data.email,
+                user_data.username
+            )
+            if existing.email == user_data.email:
+                raise UserAlreadyExistsError("email")
+            if existing.username == user_data.username:
+                raise UserAlreadyExistsError("username")
+            raise
+
 
     async def login(self, user_data: UserLogin) -> dict[str, str|User]:
-        user = await self.repo.get_user(user_data.email)
+        user = await self.repo.get_by_email(user_data.email)
         if not user or not verify_password(user_data.password, user.hashed_password):
             raise UserNotFoundError()
         if not user.is_active:
             raise UserDisabledError()
-        return await self._create_tokens(user)
+        tokens = await self._create_tokens(user)
+        await self.db.commit()
+        return tokens
 
     async def get_user_by_email(self, email: str) -> User | None:
         return await self.repo.get_by_email(email)
@@ -58,13 +71,18 @@ class UserService:
         await self.session_repo.delete(session)
         
         user = await self.repo.get_by_id(session.user_id)
-        if not user or not user.is_active:
+        if not user:
+            raise UserNotFoundError()
+        if not user.is_active:
             raise UserDisabledError()
         
-        return await self._create_tokens(user)
+        tokens = await self._create_tokens(user)
+        await self.db.commit()
+        return tokens
         
     async def logout(self, refresh_token:str, access_token:str) -> None:
         await self.session_repo.delete_by_hash(refresh_token)
+        await self.db.commit()
         try:
             payload = decode_access_token(access_token, verify_exp=False)
             exp = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
