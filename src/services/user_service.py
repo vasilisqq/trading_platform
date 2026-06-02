@@ -1,15 +1,18 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError 
+from fastapi import HTTPException
 from src.models.user import User
 from src.schemas.user import CreateUser, UserLogin
 from src.repositories.user_repository import UserRepository
 from src.repositories.session_repository import SessionRepository
 from core.security import hash_password, create_access_token, create_refresh_token, verify_password, decode_refresh_token, decode_access_token
-from src.exceptions import UserAlreadyExistsError, DataBaseError, UserNotFoundError, UserDisabledError
+from src.exceptions import UserAlreadyExistsError, UserNotFoundError, UserDisabledError
 from jwt import ExpiredSignatureError, InvalidTokenError
 from datetime import datetime, timezone, timedelta
 from src.core.config import settings
 from src.services.token_blacklist import TokenBlackListService
+from src.services.email_verification import EmailVerification
+from uuid import UUID
 
 
 class UserService:
@@ -18,16 +21,15 @@ class UserService:
         self.repo = UserRepository(db)
         self.session_repo = SessionRepository(db)
         self.token_blacklist = TokenBlackListService()
+        self.email_verification = EmailVerification()
 
 
-    async def register(self, user_data: CreateUser) -> dict[str, str|User]:
+    async def register(self, user_data: CreateUser) -> None:
         hashed_password = hash_password(user_data.password)
         user = await self.repo.create(user_data, hashed_password)
         try:
-            await self.db.flush()
-            tokens = await self._create_tokens(user)
             await self.db.commit()
-            return tokens
+            await self.email_verification.send_email(user.email, user.id)
         except IntegrityError:
             await self.db.rollback()
             existing = await self.repo.get_by_email_or_username(
@@ -47,6 +49,8 @@ class UserService:
             raise UserNotFoundError()
         if not user.is_active:
             raise UserDisabledError()
+        if not user.email_verified:
+            raise HTTPException(403, "Email not verified")
         tokens = await self._create_tokens(user)
         await self.db.commit()
         return tokens
@@ -102,3 +106,16 @@ class UserService:
             "refresh_token": refresh_token,
             "user": user
         }
+
+
+    async def verify_email(self, token:str) -> dict[str, str|User]:
+        user_id = await self.email_verification.verify_email(token)
+        if not user_id:
+            raise HTTPException(400, "Invalid or expired token")
+        user = await self.repo.get_by_id(UUID(user_id))
+        if not user:
+            raise UserNotFoundError()
+        user.email_verified = True
+        tokens = await self._create_tokens(user)
+        await self.db.commit()
+        return tokens

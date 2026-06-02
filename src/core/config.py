@@ -10,10 +10,14 @@ class Settings(BaseSettings):
     DB_PASSWORD: SecretStr
     DB_NAME: str
     APP_NAME: str
+    PUBLIC_URL: str
     SECRET_KEY: SecretStr
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_DAYS: int
     REDIS_URL: SecretStr
+    RESEND_API_KEY: SecretStr
+    TEMPLATE_ID: str
+    EXPIRE_EMAIL_HOURS: int
 
     class Config:
         env_file = ".env"

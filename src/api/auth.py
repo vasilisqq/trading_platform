@@ -13,16 +13,13 @@ router = APIRouter(prefix="/auth",
                    tags=["authentification"])
 
 
-@router.post("/register", response_model = TokenResponse)
+@router.post("/register")
 async def register_user(
     user_data: CreateUser,
-    response: Response,
     user_service: UserService = Depends(get_user_service)
 ):
-    print(user_data)
-    data = await user_service.register(user_data)
-    set_cookie_refresh_token(response, data["refresh_token"])
-    return build_token_response(data["access_token"], data["user"])
+    await user_service.register(user_data)
+    return {"Register": "Email was sent"}
 
 
 @router.post('/login', response_model = TokenResponse)
@@ -68,5 +65,10 @@ async def logout(request: Request,
     return {"message": "Successfully logget out"}
 
 
-
-
+@router.get("/verify-email")
+async def verify_email(token: str, 
+                       response: Response,
+                       user_service: UserService = Depends(get_user_service)):
+    data = await user_service.verify_email(token)
+    set_cookie_refresh_token(response, data["refresh_token"])
+    return build_token_response(data["access_token"], data["user"])

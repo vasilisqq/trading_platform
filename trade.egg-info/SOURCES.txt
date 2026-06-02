@@ -18,6 +18,7 @@ src/repositories/session_repository.py
 src/repositories/user_repository.py
 src/schemas/token.py
 src/schemas/user.py
+src/services/email_verification.py
 src/services/token_blacklist.py
 src/services/user_service.py
 trade.egg-info/PKG-INFO

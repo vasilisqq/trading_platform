@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, update
 from src.models.user import User
 from src.schemas.user import CreateUser, UserLogin
 from uuid import uuid7
@@ -45,3 +45,4 @@ class UserRepository:
             select(User).where(User.id == user_id)
         )
         return result.scalar_one_or_none()
+    
