@@ -50,7 +50,8 @@ class UserService:
         if not user.is_active:
             raise UserDisabledError()
         if not user.email_verified:
-            raise HTTPException(403, "Email not verified")
+            await self.email_verification.send_email(user.email, user.id)
+            raise HTTPException(403, "Check your email for verification")
         tokens = await self._create_tokens(user)
         await self.db.commit()
         return tokens

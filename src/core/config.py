@@ -1,4 +1,4 @@
-from pydantic import SecretStr, model_validator, PostgresDsn
+from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings
 from urllib.parse import quote_plus
 
@@ -23,14 +23,11 @@ class Settings(BaseSettings):
         env_file = ".env"
         case_sensitive = True
 
-    # Это поле НЕ читается из .env, а вычисляется
     DATABASE_URL: SecretStr = SecretStr("")
     SYNC_DATABASE_URL: SecretStr = SecretStr("")
 
     @model_validator(mode="after")
     def assemble_database_url(self) -> "Settings":
-        # url_quote автоматически кодирует спецсимволы в пароле!
-
         password = quote_plus(self.DB_PASSWORD.get_secret_value())
         url = f"postgresql+asyncpg://{self.DB_USER}:{password}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         sync_url = f"postgresql+psycopg2://{self.DB_USER}:{password}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
