@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     REDIS_URL: SecretStr
     RESEND_API_KEY: SecretStr
     TEMPLATE_ID: str
+    TEMPLATE_PASSWORD_ID: str
     EXPIRE_EMAIL_HOURS: int
 
     class Config:

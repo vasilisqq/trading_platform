@@ -18,10 +18,6 @@ def set_cookie_refresh_token(response: Response, refresh_token:str) -> None:
 def build_token_response(access_token: str, user:User) -> TokenResponse:
     return TokenResponse(
         access_token=access_token,
-        user = UserResponse(
-            email=user.email,
-            username=user.username,
-            id=user.id
-        )
+        user = UserResponse.model_validate(user)
     )
     

@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, Response, Request
+from fastapi import APIRouter, Depends, Response, Request, Query, Body
 from fastapi.security import HTTPAuthorizationCredentials
-from src.schemas.user import CreateUser, UserLogin
+from src.schemas.user import CreateUser, UserLogin, ForgotPasswordRequest, ResetPasswordRequest
 from src.schemas.token import TokenResponse
 from src.core.dependencies import get_user_service
 from src.services.user_service import UserService
@@ -65,10 +65,27 @@ async def logout(request: Request,
     return {"message": "Successfully logget out"}
 
 
-@router.get("/verify-email")
+@router.get("/verify-email", response_model=TokenResponse)
 async def verify_email(token: str, 
                        response: Response,
                        user_service: UserService = Depends(get_user_service)):
     data = await user_service.verify_email(token)
     set_cookie_refresh_token(response, data["refresh_token"])
     return build_token_response(data["access_token"], data["user"])
+
+@router.post("/forgot_password")
+async def forgot_password(
+    data: ForgotPasswordRequest,
+    user_service: UserService = Depends(get_user_service) 
+):
+    await user_service.forgot_password(data.email)
+    return {"message": "check your email"}
+    
+
+@router.post("/reset-password")
+async def reset_password(
+    new_password: ResetPasswordRequest,
+    token:str = Query(...),
+    user_service: UserService = Depends(get_user_service) 
+):
+    return await user_service.reset_password(token, new_password.password)

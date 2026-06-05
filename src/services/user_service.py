@@ -29,7 +29,7 @@ class UserService:
         user = await self.repo.create(user_data, hashed_password)
         try:
             await self.db.commit()
-            await self.email_verification.send_email(user.email, user.id)
+            await self.email_verification.send_email_register(user.email, user.id)
         except IntegrityError:
             await self.db.rollback()
             existing = await self.repo.get_by_email_or_username(
@@ -50,7 +50,7 @@ class UserService:
         if not user.is_active:
             raise UserDisabledError()
         if not user.email_verified:
-            await self.email_verification.send_email(user.email, user.id)
+            await self.email_verification.send_email_register(user.email, user.id)
             raise HTTPException(403, "Check your email for verification")
         tokens = await self._create_tokens(user)
         await self.db.commit()
@@ -120,3 +120,20 @@ class UserService:
         tokens = await self._create_tokens(user)
         await self.db.commit()
         return tokens
+    
+    async def forgot_password(self, email:str) -> None:
+        if await self.repo.get_by_email(email):
+            await self.email_verification.send_email_new_password(email)
+
+    
+    async def reset_password(self, token:str, password:str) -> dict[str, str]:
+        email = await self.email_verification.verify_email_password_changing(token)
+        if not email:
+            raise HTTPException(400, "Invalid or expired token")
+        hashed_password = hash_password(password)
+        await self.repo.update_password(email, hashed_password)
+        try:
+            await self.db.commit()
+            return {"message": "password was successfuly changed"}
+        except:
+            raise UserNotFoundError()

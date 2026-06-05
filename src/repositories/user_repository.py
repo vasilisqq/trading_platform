@@ -46,3 +46,9 @@ class UserRepository:
         )
         return result.scalar_one_or_none()
     
+
+    async def update_password(self, email:str, password:str) -> None:
+        await self.db.execute(
+            update(User).where(User.email == email).values(hashed_password=password)
+        )
+        
