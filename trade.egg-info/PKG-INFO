@@ -19,6 +19,7 @@ Requires-Dist: redis>=8.0.0
 Requires-Dist: zxcvbn>=4.5.0
 Requires-Dist: resend>=2.30.1
 Requires-Dist: httpx>=0.28.1
+Requires-Dist: greenlet>=3.5.1
 
 # TradeSim — Симулятор биржевой торговли
 

@@ -5,14 +5,15 @@ from src.models.user import User
 from src.schemas.user import CreateUser, UserLogin
 from src.repositories.user_repository import UserRepository
 from src.repositories.session_repository import SessionRepository
-from core.security import hash_password, create_access_token, create_refresh_token, verify_password, decode_refresh_token, decode_access_token
+from src.core.security import hash_password, create_access_token, create_refresh_token, verify_password, decode_refresh_token, decode_access_token
 from src.exceptions import UserAlreadyExistsError, UserNotFoundError, UserDisabledError
 from jwt import ExpiredSignatureError, InvalidTokenError
 from datetime import datetime, timezone, timedelta
 from src.core.config import settings
 from src.services.token_blacklist import TokenBlackListService
 from src.services.email_verification import EmailVerification
-from uuid import UUID
+from src.services.google_oauth import GoogleOAuthService
+from uuid import UUID, uuid7
 
 
 class UserService:
@@ -22,6 +23,7 @@ class UserService:
         self.session_repo = SessionRepository(db)
         self.token_blacklist = TokenBlackListService()
         self.email_verification = EmailVerification()
+        self.google_oauth = GoogleOAuthService()
 
 
     async def register(self, user_data: CreateUser) -> None:
@@ -137,3 +139,55 @@ class UserService:
             return {"message": "password was successfuly changed"}
         except:
             raise UserNotFoundError()
+        
+        
+    async def oauth_login(self, google_id: str, email: str) -> dict:
+        user = await self.repo.get_by_google_id(google_id)
+        if user:
+            if not user.is_active:
+                raise UserDisabledError()
+        else:
+            user = await self.repo.get_by_email(email)
+            if user:
+                if not user.is_active:
+                    raise UserDisabledError()
+                user.google_id=google_id
+            else:
+                username = email.split("@")[0]
+                user = User(
+                    id=uuid7(),
+                    username=username,
+                    email=email,
+                    google_id=google_id,
+                    email_verified=True
+                )
+                self.db.add(user)
+        tokens = await self._create_tokens(user)
+        try:
+            await self.db.commit()
+        except IntegrityError:
+            await self.db.rollback()
+            existing = await self.repo.get_by_google_id(google_id)
+            if existing:
+                if not existing.is_active:
+                    raise UserDisabledError()
+                user = existing
+            else:
+                # Конфликт username
+                user.username = f"{user.username}_{user.google_id[:6]}"
+                self.db.add(user)
+            tokens = await self._create_tokens(user)
+            await self.db.commit()
+        return tokens
+    
+    async def google_auth(self, code: str, state:str) -> dict:
+        if not await self.google_oauth.verify_state(state):
+            raise UserNotFoundError()
+        tokens = await self.google_oauth.exchange_code(code)
+        user_info = await self.google_oauth.get_user_info(tokens["access_token"])
+        if "sub" not in user_info or "email" not in user_info:
+            raise HTTPException(500, "Invalid response from Google")    
+        return await self.oauth_login(
+            google_id=user_info["sub"],
+            email=user_info["email"]
+        )

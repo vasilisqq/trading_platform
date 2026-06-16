@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends, Response, Request, Query, Body
+from fastapi import APIRouter, Depends, Response, Request, Query, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 from src.schemas.user import CreateUser, UserLogin, ForgotPasswordRequest, ResetPasswordRequest
 from src.schemas.token import TokenResponse
-from src.core.dependencies import get_user_service
+from src.core.dependencies import get_user_service, get_google_oauth
 from src.services.user_service import UserService
 from src.exceptions import TokenNotFoundError
 from src.api.utils import set_cookie_refresh_token, build_token_response
 from src.core.dependencies import security
+from uuid import uuid4
+from src.services.google_oauth import GoogleOAuthService
 
 
 router = APIRouter(prefix="/auth", 
@@ -89,3 +91,38 @@ async def reset_password(
     user_service: UserService = Depends(get_user_service) 
 ):
     return await user_service.reset_password(token, new_password.password)
+
+
+@router.get("/google")
+async def google_auth(
+    response: Response,
+    oauth: GoogleOAuthService = Depends(get_google_oauth)
+):
+    state = str(uuid4())
+    url = await oauth.get_auth_url(state)
+    response.set_cookie(
+        key="oauth_state",
+        value=state,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=600
+    )
+    return {"auth_url": url}
+
+
+@router.get("/google/callback")
+async def google_callback(
+    response: Response,
+    request: Request,
+    code: str = Query(...),
+    state: str = Query(...),
+    user_service: UserService = Depends(get_user_service)
+):
+    cookie_state = request.cookies.get("oauth_state")
+    if not cookie_state or cookie_state != state:
+        raise HTTPException(400, "Invalid state")
+    response.delete_cookie("oauth_state")
+    data = await user_service.google_auth(code, state)
+    set_cookie_refresh_token(response, data["refresh_token"])
+    return build_token_response(data["access_token"], data["user"])

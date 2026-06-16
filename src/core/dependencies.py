@@ -1,4 +1,4 @@
-from services.user_service import UserService
+from src.services.user_service import UserService
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -9,11 +9,16 @@ from src.repositories.user_repository import UserRepository
 from src.exceptions import UserNotFoundError, UserDisabledError
 from src.services.token_blacklist import TokenBlackListService
 from src.core.security import decode_access_token
+from src.services.google_oauth import GoogleOAuthService
+
 
 security = HTTPBearer()
 
 async def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
     return UserService(db)
+
+async def get_google_oauth() -> GoogleOAuthService:
+    return GoogleOAuthService()
 
 
 async def get_current_user(

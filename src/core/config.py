@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     TEMPLATE_ID: str
     TEMPLATE_PASSWORD_ID: str
     EXPIRE_EMAIL_HOURS: int
+    GOOGLE_CLIENT_ID: SecretStr
+    GOOGLE_CLIENT_SECRET: SecretStr
+    GOOGLE_REDIRECT_URI: SecretStr
 
     class Config:
         env_file = ".env"
