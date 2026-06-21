@@ -22,6 +22,9 @@ src/services/email_verification.py
 src/services/google_oauth.py
 src/services/token_blacklist.py
 src/services/user_service.py
+tests/test_api.py
+tests/test_repository.py
+tests/test_serivces.py
 trade.egg-info/PKG-INFO
 trade.egg-info/SOURCES.txt
 trade.egg-info/dependency_links.txt

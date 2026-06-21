@@ -9,7 +9,7 @@ from src.exceptions import (
 )
 import uvicorn
 from src.core.config import settings
-from api import router
+from src.api import router
 from contextlib import asynccontextmanager
 from src.core.redis import get_redis, close_redis
 from fastapi.middleware.cors import CORSMiddleware

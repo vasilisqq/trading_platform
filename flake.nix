@@ -31,6 +31,7 @@
               pkgs.stdenv.cc.cc.lib
             ]}:$LD_LIBRARY_PATH
             echo "🐍 Python Nix-Shell Activated!"
+            echo "LD_LIBRARY_PATH includes: zlib, libffi, libstdc++"
           '';
         };
       });

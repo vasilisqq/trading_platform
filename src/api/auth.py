@@ -9,6 +9,8 @@ from src.api.utils import set_cookie_refresh_token, build_token_response
 from src.core.dependencies import security
 from uuid import uuid4
 from src.services.google_oauth import GoogleOAuthService
+from fastapi import BackgroundTasks
+from src.exceptions import UserNotFoundError
 
 
 router = APIRouter(prefix="/auth", 
@@ -18,11 +20,34 @@ router = APIRouter(prefix="/auth",
 @router.post("/register")
 async def register_user(
     user_data: CreateUser,
+    background_tasks: BackgroundTasks,
     user_service: UserService = Depends(get_user_service)
 ):
-    await user_service.register(user_data)
+    user = await user_service.register(user_data)
+    background_tasks.add_task(
+        user_service.email_verification.send_email_register,
+        user.email, 
+        user.id
+    )
     return {"Register": "Email was sent"}
 
+@router.post("/resend-verification")
+async def resend_verification(
+    email: str,
+    background_tasks: BackgroundTasks,
+    user_service: UserService = Depends(get_user_service),
+    
+):
+    user = await user_service.get_user_by_email(email)
+    if not user or user.email_verified:
+        raise UserNotFoundError()
+    
+    background_tasks.add_task(
+        user_service.email_verification.send_email_register,
+        user.email,
+        user.id
+    )
+    return {"message": "Email was sent"}
 
 @router.post('/login', response_model = TokenResponse)
 async def login_user(

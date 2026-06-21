@@ -31,7 +31,7 @@ class UserService:
         user = await self.repo.create(user_data, hashed_password)
         try:
             await self.db.commit()
-            await self.email_verification.send_email_register(user.email, user.id)
+            return user
         except IntegrityError:
             await self.db.rollback()
             existing = await self.repo.get_by_email_or_username(

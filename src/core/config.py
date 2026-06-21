@@ -1,4 +1,4 @@
-from pydantic import SecretStr, model_validator
+from pydantic import SecretStr, model_validator, ConfigDict
 from pydantic_settings import BaseSettings
 from urllib.parse import quote_plus
 
@@ -23,9 +23,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: SecretStr
     GOOGLE_REDIRECT_URI: SecretStr
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = ConfigDict(env_file=".env", case_sensitive=True)
 
     DATABASE_URL: SecretStr = SecretStr("")
     SYNC_DATABASE_URL: SecretStr = SecretStr("")

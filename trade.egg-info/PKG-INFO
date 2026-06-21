@@ -20,6 +20,8 @@ Requires-Dist: zxcvbn>=4.5.0
 Requires-Dist: resend>=2.30.1
 Requires-Dist: httpx>=0.28.1
 Requires-Dist: greenlet>=3.5.1
+Requires-Dist: pytest>=9.1.0
+Requires-Dist: pytest-asyncio>=1.4.0
 
 # TradeSim — Симулятор биржевой торговли
 
