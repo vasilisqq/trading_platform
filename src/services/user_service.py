@@ -112,7 +112,7 @@ class UserService:
 
 
     async def verify_email(self, token:str) -> dict[str, str|User]:
-        user_id = await self.email_verification.verify_email(token)
+        user_id = await self.email_verification.verify_email_register(token)
         if not user_id:
             raise HTTPException(400, "Invalid or expired token")
         user = await self.repo.get_by_id(UUID(user_id))
