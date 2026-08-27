@@ -93,19 +93,19 @@
 ### 3.2 Unit — новый файл `tests/test_schemas.py`
 Тестируем `src/schemas/user.py`. Сейчас во всех тестах пароль сильный, поэтому ветка `zxcvbn score < 3` **не исполняется ни разу**.
 
-- [ ] `CreateUser` со слабым паролем (напр. `"12345678"`) → `pydantic.ValidationError`.
-- [ ] `CreateUser` с сильным паролем → создаётся без ошибок.
-- [ ] Границы: `username` короче 3 и длиннее 50 → ошибка; пароль короче 8 и длиннее 128 → ошибка.
-- [ ] Некорректный `email` (`"not-an-email"`) → ошибка.
-- [ ] То же самое для `ResetPasswordRequest` (у него свой такой же валидатор, строки 37–42).
+- [X] `CreateUser` со слабым паролем (напр. `"12345678"`) → `pydantic.ValidationError`.
+- [X] `CreateUser` с сильным паролем → создаётся без ошибок.
+- [X] Границы: `username` короче 3 и длиннее 50 → ошибка; пароль короче 8 и длиннее 128 → ошибка.
+- [X] Некорректный `email` (`"not-an-email"`) → ошибка.
+- [X] То же самое для `ResetPasswordRequest` (у него свой такой же валидатор, строки 37–42).
 
 *Подсказка: `with pytest.raises(ValidationError): CreateUser(...)`.*
 
 ### 3.3 Unit — дополнить `tests/test_services.py` (переименуй файл, см. 5)
 Тестируем ветвление сервисов. **Репозиторий мокаем** (`service.repo.X = AsyncMock(...)`) — как ты уже делал в `test_wrong_password_login`. БД тут не нужна.
 
-- [ ] `UserService.login`: успех (мок юзер `is_active=True`, `email_verified=True`, `verify_password → True`) → возвращает токены/пользователя.
-- [ ] `UserService.login`: `is_active=False` → `UserDisabledError`.
+- [X] `UserService.login`: успех (мок юзер `is_active=True`, `email_verified=True`, `verify_password → True`) → возвращает токены/пользователя.
+- [X] `UserService.login`: `is_active=False` → `UserDisabledError`.
 - [ ] `UserService.refresh`: успех → новые токены; битый/протухший refresh → `UserNotFoundError`; сессия не найдена → `UserNotFoundError`. *(⚠️ см. баг №1 в разделе 4 — тест на «старая сессия удалена» помечай xfail.)*
 - [ ] `UserService.oauth_login`: (а) найден по `google_id`; (б) найден по `email`, к нему привязывается `google_id`; (в) новый пользователь создаётся; (г) `is_active=False` → `UserDisabledError`.
 - [ ] `UserService.reset_password`: битый токен → `HTTPException(400)`; успех. *(⚠️ баг №2.)*

@@ -27,7 +27,7 @@ class TestAuth:
         mock_resend.assert_called_once()
 
     @pytest.mark.asyncio(loop_scope="session")
-    async def test_register_user_duplicate(self, client, mock_resend, mock_redis):
+    async def test_register_user_duplicate(self, client, create_user, mock_redis, mock_resend):
         """
         Тест регистрации с дублирующимся email.
         Первый запрос создаёт пользователя, второй возвращает 409.
@@ -35,12 +35,11 @@ class TestAuth:
         payload = {
             "email": "dup@example.com",
             "username": "dupuser",
-            "password": "StrongPass123!",
+            "password": "StrongPassword123!",
         }
 
         # Первый раз — успех
-        r1 = await client.post("/auth/register", json=payload)
-        assert r1.status_code == 200
+        await create_user(email="dup@example.com", username="dupuser")
 
         # Второй раз — конфликт (409)
         r2 = await client.post("/auth/register", json=payload)
@@ -48,25 +47,17 @@ class TestAuth:
         assert "already exists" in r2.json()["detail"]
 
     @pytest.mark.asyncio(loop_scope="session")
-    async def test_login_unverified_email(self, client, mock_resend, mock_redis):
+    async def test_login_unverified_email(self, client, create_user, mock_resend):
         """
         Тест логина с неподтверждённым email.
         Сначала регистрируем, потом логинимся — получаем 403.
         """
         # Регистрация
-        await client.post(
-            "/auth/register",
-            json={
-                "email": "login@test.com",
-                "username": "loginuser",
-                "password": "StrongPass123!",
-            },
-        )
-
+        await create_user(email="login@test.com", username="loginuser")
         # Логин
         response = await client.post(
             "/auth/login",
-            json={"email": "login@test.com", "password": "StrongPass123!"},
+            json={"email": "login@test.com", "password": "StronGPassword123!"},
         )
 
         # 403, потому что email не верифицирован

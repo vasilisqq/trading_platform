@@ -5,7 +5,7 @@ from src.models.user import User
 from unittest.mock import AsyncMock, MagicMock, patch
 from src.schemas.user import CreateUser, UserLogin
 from sqlalchemy.exc import IntegrityError
-from src.exceptions import UserAlreadyExistsError, UserNotFoundError
+from src.exceptions import UserAlreadyExistsError, UserNotFoundError, UserDisabledError
 from uuid import uuid4
 
 
@@ -52,6 +52,46 @@ class TestUserService:
         
         assert "email" in str(exc_info.value)
 
+    @pytest.mark.asyncio(loop_scope="session")
+    async def test_success_login(self, db_session):
+        service = UserService(db_session)
+        user_mock = User(
+            id="test-uuid",
+            email="user@email.ru",
+            username="newuser",
+            hashed_password="hashed_pass",
+            is_active=True,
+            email_verified=True
+        )
+        service.repo.get_by_email = AsyncMock(return_value=user_mock)
+        user = UserLogin(
+            email="user@email.ru",
+            password="StrongPassword1213!"
+        )
+        with patch("src.services.user_service.verify_password", return_value=True):
+            tokens = await service.login(user)
+            assert tokens is not None
+
+    @pytest.mark.asyncio(loop_scope="session")
+    async def test_is_not_active_login(self, db_session):
+        service = UserService(db_session)
+        user_mock = User(
+            id="test-uuid",
+            email="user@email.ru",
+            username="newuser",
+            hashed_password="hashed_pass",
+            is_active=False,
+            email_verified=True
+        )
+        service.repo.get_by_email = AsyncMock(return_value=user_mock)
+        user = UserLogin(
+            email="user@email.ru",
+            password="StrongPassword1213!"
+        )
+        with patch("src.services.user_service.verify_password", return_value=True):
+            with pytest.raises(UserDisabledError):
+                await service.login(user)
+
 
     @pytest.mark.asyncio(loop_scope="session")
     async def test_wrong_password_login(self, db_session):
@@ -88,6 +128,7 @@ class TestUserService:
         result = await service.verify_email("token")
         assert result is not None
         assert result["user"] == test_user
+
 
 class TestEmailVerification:
     @pytest.mark.asyncio(loop_scope="session")

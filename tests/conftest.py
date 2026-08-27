@@ -10,6 +10,10 @@ import respx
 from httpx import Response
 from alembic.config import Config
 from alembic import command
+from src.schemas.user import CreateUser
+from src.core.security import hash_password
+from src.repositories.user_repository import UserRepository
+
 
 # ВАЖНО: устанавливаем .env.test ДО импорта модулей проекта
 os.environ["ENV_FILE"] = ".env.test"
@@ -205,3 +209,27 @@ def mock_google_http():
         )
 
         yield
+
+@pytest_asyncio.fixture
+async def create_user(db_session):
+    async def _make(**overrides):
+        data = {
+            "email": "test@mail.ru", 
+            "username":"test_user", 
+            "password":"StronGPassword123!"
+        }
+        data.update(overrides) 
+        user_data = CreateUser(**data)
+        hashed_password = hash_password(user_data.password)
+        repo = UserRepository(db_session)
+        user = await repo.create(user_data, hashed_password)
+        await db_session.commit()
+        return user
+    return _make
+
+@pytest_asyncio.fixture
+async def verify_user(create_user, db_session):
+    user = await create_user()
+    user.email_verified = True
+    await db_session.commit()
+    return user

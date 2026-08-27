@@ -20,13 +20,16 @@ class TestSecurity:
         base = "A" * 72
         hashed_password = hash_password(base + "111")
         assert verify_password(base+"999", hashed_password) is False
+        assert verify_password(base+"111", hashed_password) is True
 
     def test_decode_access_token(self):
         token = create_access_token(
             {"name": "test"}
         )
         data = decode_access_token(token)
+        assert data["exp"] is not None
         assert data["iat"] is not None
+        assert data["exp"] > data["iat"]
         assert data["jti"] is not None
         assert data["type"] == "access"
         assert data["name"] == "test"
@@ -39,6 +42,7 @@ class TestSecurity:
         data = decode_refresh_token(token)
         assert data["exp"] is not None
         assert data["iat"] is not None
+        assert data["exp"] > data["iat"]
         assert data.get("jti") is None
         assert data["type"] == "refresh"
         assert data["name"] == "test"
