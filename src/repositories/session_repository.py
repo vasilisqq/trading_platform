@@ -32,7 +32,7 @@ class SessionRepository:
         return result.scalar_one_or_none()
     
     async def delete(self, session:Session) -> None:
-        self.db.delete(session)
+        await self.db.delete(session)
 
     async def delete_by_hash(self, refresh_token:str) -> None:
         token_hash = self._hash_token(refresh_token)

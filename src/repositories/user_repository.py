@@ -48,9 +48,10 @@ class UserRepository:
     
 
     async def update_password(self, email:str, password:str) -> None:
-        await self.db.execute(
+        result = await self.db.execute(
             update(User).where(User.email == email).values(hashed_password=password)
         )
+        result.row
         
     async def get_by_google_id(self, google_id: str) -> User| None:
         result = await self.db.execute(
