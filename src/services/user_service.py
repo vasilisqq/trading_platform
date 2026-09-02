@@ -5,7 +5,12 @@ from src.models.user import User
 from src.schemas.user import CreateUser, UserLogin
 from src.repositories.user_repository import UserRepository
 from src.repositories.session_repository import SessionRepository
-from src.core.security import hash_password, create_access_token, create_refresh_token, verify_password, decode_refresh_token, decode_access_token
+from src.core.security import (
+    hash_password, create_access_token, 
+    create_refresh_token, verify_password, 
+    decode_refresh_token, decode_access_token,
+    DUMMY_PASSWORD_HASH
+    )
 from src.exceptions import UserAlreadyExistsError, UserNotFoundError, UserDisabledError
 from jwt import ExpiredSignatureError, InvalidTokenError
 from datetime import datetime, timezone, timedelta
@@ -14,6 +19,7 @@ from src.services.token_blacklist import TokenBlackListService
 from src.services.email_verification import EmailVerification
 from src.services.google_oauth import GoogleOAuthService
 from uuid import UUID, uuid7
+from src.services.rate_limit import RateLimiter
 
 
 class UserService:
@@ -24,6 +30,7 @@ class UserService:
         self.token_blacklist = TokenBlackListService()
         self.email_verification = EmailVerification()
         self.google_oauth = GoogleOAuthService()
+        self.rate_limiter = RateLimiter()
 
 
     async def register(self, user_data: CreateUser) -> None:
@@ -45,11 +52,23 @@ class UserService:
             raise
 
 
-    async def login(self, user_data: UserLogin) -> dict[str, str|User]:
+    async def login(self, user_data: UserLogin, ip) -> dict[str, str|User]:
+        if await self.rate_limiter.too_many(f"email:{user_data.email}", 5) or \
+                        await self.rate_limiter.too_many(f"ip:{ip}", 20):
+            raise HTTPException(429, "Too many login attempts, try later")
         user = await self.repo.get_by_email(user_data.email)
-        if not user or not verify_password(user_data.password, user.hashed_password):
+        if not user:
+            verify_password(user_data.password, DUMMY_PASSWORD_HASH)
+            await self.rate_limiter.incr(f"email:{user_data.email}", 900)
+            await self.rate_limiter.incr(f"ip:{ip}", 900)
+            raise UserNotFoundError()
+        if not verify_password(user_data.password, user.hashed_password):
+            await self.rate_limiter.incr(f"email:{user_data.email}", 900)
+            await self.rate_limiter.incr(f"ip:{ip}", 900)
             raise UserNotFoundError()
         if not user.is_active:
+            await self.rate_limiter.incr(f"email:{user_data.email}", 900)
+            await self.rate_limiter.incr(f"ip:{ip}", 900)
             raise UserDisabledError()
         if not user.email_verified:
             await self.email_verification.send_email_register(user.email, user.id)
@@ -132,13 +151,13 @@ class UserService:
         email = await self.email_verification.verify_email_password_changing(token)
         if not email:
             raise HTTPException(400, "Invalid or expired token")
-        hashed_password = hash_password(password)
-        await self.repo.update_password(email, hashed_password)
-        try:
-            await self.db.commit()
-            return {"message": "password was successfuly changed"}
-        except:
+        user = await self.repo.get_by_email(email)
+        if not user:
             raise UserNotFoundError()
+        await self.repo.update_password(email, hash_password(password))
+        await self.session_repo.delete_all_for_user(user.id)   # без except_hash — отозвать всё
+        await self.db.commit()
+        return {"message": "password was successfully changed"}
         
         
     async def oauth_login(self, google_id: str, email: str) -> dict:
@@ -152,6 +171,7 @@ class UserService:
                 if not user.is_active:
                     raise UserDisabledError()
                 user.google_id=google_id
+                user.email_verified = True
             else:
                 username = email.split("@")[0]
                 user = User(

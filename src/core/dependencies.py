@@ -38,7 +38,10 @@ async def get_current_user(
     if await token_blacklist.is_blacklisted(payload.get("jti")):
         raise HTTPException(status_code=401, detail="Invalid token")
     repo = UserRepository(db)
-    user = await repo.get_by_id(user_id)
+    try:
+        user = await repo.get_by_id(UUID(user_id))
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid token")
     if not user:
          raise UserNotFoundError()
     if not user.is_active:

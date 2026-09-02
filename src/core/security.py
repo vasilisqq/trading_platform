@@ -7,6 +7,8 @@ import uuid
 import base64
 
 
+DUMMY_PASSWORD_HASH = hash_password("dummy-password-to-equalize-timing")
+
 def hash_password(password: str) -> str:
     combined = password.encode()
     hash256 = base64.b64encode(hashlib.sha256(combined).digest())
