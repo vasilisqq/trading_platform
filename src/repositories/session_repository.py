@@ -39,3 +39,9 @@ class SessionRepository:
         await self.db.execute(
             delete(Session).where(Session.refresh_token_hash == token_hash)
         )
+
+    async def delete_all_for_user(self, user_id: UUID, excpt_hash:str = None):
+        stmt = delete(Session).where(Session.user_id == user_id)
+        if excpt_hash is not None:
+            stmt = stmt.where(Session.refresh_token_hash != excpt_hash)
+        await self.db.execute(stmt)

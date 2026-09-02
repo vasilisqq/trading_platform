@@ -191,3 +191,12 @@ class UserService:
             google_id=user_info["sub"],
             email=user_info["email"]
         )
+
+    async def change_password(self, user: User, old_password:str, new_password:str, excpt_hash:str = None):
+        if not user.hashed_password: #Oauth
+            raise HTTPException(400, "User has no password")
+        if not verify_password(old_password, user.hashed_password):
+            raise HTTPException(400, "Password is incorrect")
+        await self.repo.update_password(user.email, hash_password(new_password))
+        await self.session_repo.delete_all_for_user(user.id, excpt_hash)
+        await self.db.commit()

@@ -3,6 +3,12 @@ from uuid import UUID
 from zxcvbn import zxcvbn
 
 
+def validate_password_strength(v):
+    result = zxcvbn(v)
+    if result['score'] < 3:
+        raise ValueError("weak password")
+    return v
+
 class BaseUser(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     email: EmailStr
@@ -13,11 +19,7 @@ class CreateUser(BaseUser):
     password: str = Field(min_length=8, max_length=128)
 
     @field_validator('password')
-    def validate_password(cls, v):
-        result = zxcvbn(v)
-        if result['score'] < 3:
-            raise ValueError("weak password")
-        return v
+    def _strength(cls, v):return validate_password_strength(v)
 
 
 class UserLogin(BaseModel):
@@ -35,9 +37,12 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     password: str = Field(min_length=8, max_length=128)
     @field_validator('password')
-    def validate_password(cls, v):
-        result = zxcvbn(v)
-        if result['score'] < 3:
-            raise ValueError("weak password")
-        return v
+    def _strength(cls, v):return validate_password_strength(v)
 
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str = Field(min_length=8, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+    @field_validator('new_password')
+    def _strength(cls, v): return validate_password_strength(v)

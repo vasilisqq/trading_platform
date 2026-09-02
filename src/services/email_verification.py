@@ -49,7 +49,7 @@ class EmailVerification:
         await self._send_email(
             email, self.prefix, self.rate_prefix,
             user_id, "Email verification", settings.TEMPLATE_ID,
-            "confirm_url", "verify-email"
+            "verify_url", "verify-email"
         )
 
     async def send_email_new_password(self, email:str) -> None:

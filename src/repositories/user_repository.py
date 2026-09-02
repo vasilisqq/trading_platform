@@ -4,6 +4,7 @@ from src.models.user import User
 from src.schemas.user import CreateUser, UserLogin
 from uuid import uuid7
 from uuid import UUID
+from src.exceptions import UserNotFoundError
 
 
 class UserRepository:
@@ -51,7 +52,8 @@ class UserRepository:
         result = await self.db.execute(
             update(User).where(User.email == email).values(hashed_password=password)
         )
-        result.row
+        if result.rowcount == 0:
+            raise UserNotFoundError()
         
     async def get_by_google_id(self, google_id: str) -> User| None:
         result = await self.db.execute(

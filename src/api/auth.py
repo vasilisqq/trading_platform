@@ -1,8 +1,12 @@
 from fastapi import APIRouter, Depends, Response, Request, Query, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
-from src.schemas.user import CreateUser, UserLogin, ForgotPasswordRequest, ResetPasswordRequest
+from src.schemas.user import (
+    CreateUser, UserLogin, 
+    ForgotPasswordRequest, ResetPasswordRequest, 
+    ChangePasswordRequest
+)
 from src.schemas.token import TokenResponse
-from src.core.dependencies import get_user_service, get_google_oauth
+from src.core.dependencies import get_user_service, get_google_oauth, get_current_user
 from src.services.user_service import UserService
 from src.exceptions import TokenNotFoundError
 from src.api.utils import set_cookie_refresh_token, build_token_response
@@ -151,3 +155,17 @@ async def google_callback(
     data = await user_service.google_auth(code, state)
     set_cookie_refresh_token(response, data["refresh_token"])
     return build_token_response(data["access_token"], data["user"])
+
+
+@router.post("/change-password")
+async def change_password(
+    data: ChangePasswordRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    user_service: UserService = Depends(get_user_service),
+):
+    refresh_token = request.cookies.get("refresh_token")
+    await user_service.change_password(
+        current_user, data.old_password, data.new_password, refresh_token
+    )
+    return {"response": "success"}

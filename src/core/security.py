@@ -4,11 +4,12 @@ from datetime import datetime, timedelta, timezone
 from src.core.config import settings
 import hashlib
 import uuid
+import base64
 
 
 def hash_password(password: str) -> str:
     combined = password.encode()
-    hash256 = hashlib.sha256(combined).digest()
+    hash256 = base64.b64encode(hashlib.sha256(combined).digest())
     salt = bcrypt.gensalt(rounds=12)
     hashed = bcrypt.hashpw(hash256, salt)
     return hashed.decode()
@@ -38,7 +39,7 @@ def create_refresh_token(data:dict) -> str:
 
 def verify_password(password: str, hashed_password: str) -> bool:
     combined = password.encode()
-    hash256 = hashlib.sha256(combined).digest()
+    hash256 = base64.b64encode(hashlib.sha256(combined).digest())
     return bcrypt.checkpw(hash256, hashed_password.encode())
 
 
